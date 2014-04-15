@@ -280,13 +280,14 @@ namespace NRepeat
                 TcpClient server = new TcpClient(definition.ClientEndPoint.Address.ToString(), definition.ClientEndPoint.Port);
                 var serverStream = server.GetStream();
 
-                var cancellationToken = cancellationTokenSource.Token;
+                var definitionToken = definition.CancellationTokenSource.Token;
+                var serverToken = this.cancellationTokenSource.Token;
 
                 try
                 {
                     // Continually do the proxying
-                    new Task(() => ProxyClientDataToServer(client, definition, serverStream, clientStream, bufferSize, cancellationToken), cancellationToken).Start();
-                    new Task(() => ProxyServerDataToClient(serverStream, definition, clientStream, bufferSize, cancellationToken), cancellationToken).Start();
+                    new Task(() => ProxyClientDataToServer(client, definition, serverStream, clientStream, bufferSize, definitionToken), serverToken).Start();
+                    new Task(() => ProxyServerDataToClient(serverStream, definition, clientStream, bufferSize, definitionToken), serverToken).Start();
                 }
                 catch (Exception ex)
                 {
