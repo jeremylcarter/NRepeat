@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -63,6 +64,17 @@ namespace NRepeat
                     var client = await listener.AcceptTcpClientAsync().WithWaitCancellation(cancellationTokenSource.Token);
                     if (client != null)
                     {
+
+                        if (ClientList.Count(definition => definition.ServerEndPoint == client.Client.LocalEndPoint) == 0)
+                        {
+                            var oldClients = ClientList.Where(definition => definition.ServerEndPoint == client.Client.LocalEndPoint)
+                                    .ToList();
+                            foreach (var vncRepeaterDefinition in oldClients)
+                            {
+                                ClientList.Remove(vncRepeaterDefinition);
+                            }
+                        }
+
                         // Proxy the data from the client to the server until the end of stream filling the buffer.
                         if (ClientList.Count(definition => definition.ServerEndPoint == client.Client.LocalEndPoint) == 0)
                         {
@@ -221,28 +233,27 @@ namespace NRepeat
                     try
                     {
                         clientBytes = clientStream.Read(message, 0, bufferSize);
-                        if (BytesTransfered != null)
+
+                        var messageTrimed = message.Reverse().SkipWhile(x => x == 0).Reverse().ToArray();
+                        var messageString = Encoding.ASCII.GetString(messageTrimed);
+
+                        if (messageString.Length > 5 && messageString.Contains(":"))
                         {
-                            var messageTrimed = message.Reverse().SkipWhile(x => x == 0).Reverse().ToArray();
-                            var messageString = Encoding.ASCII.GetString(messageTrimed);
-
-                            if (messageString.Length > 5 && messageString.Contains(":"))
+                            var split = messageString.Split(":".ToCharArray());
+                            if (split.Length >= 2)
                             {
-                                var split = messageString.Split(":".ToCharArray());
-                                if (split.Length >= 2)
-                                {
-                                    var ip = split[0];
-                                    var port = split[1];
-                                    var endpoint = new IPEndPoint(IPAddress.Parse(ip), Convert.ToInt32(port));
-                                    definition.ClientEndPoint = endpoint;
-                                    definition.Authenticated = true;
-                                    break;
-                                }
-
-                                sendBytes = Encoding.ASCII.GetBytes("RFB 000.000\n");
-                                clientStream.Write(sendBytes, 0, sendBytes.Length);
+                                var ip = split[0];
+                                var port = split[1];
+                                var endpoint = new IPEndPoint(IPAddress.Parse(ip), Convert.ToInt32(port));
+                                definition.ClientEndPoint = endpoint;
+                                definition.Authenticated = true;
+                                break;
                             }
+
+                            sendBytes = Encoding.ASCII.GetBytes("RFB 000.000\n");
+                            clientStream.Write(sendBytes, 0, sendBytes.Length);
                         }
+
                     }
                     catch
                     {
@@ -274,8 +285,8 @@ namespace NRepeat
                 try
                 {
                     // Continually do the proxying
-                    new Task(() => ProxyClientDataToServer(client,definition, serverStream, clientStream, bufferSize, cancellationToken), cancellationToken).Start();
-                    new Task(() => ProxyServerDataToClient(serverStream, definition,clientStream, bufferSize, cancellationToken), cancellationToken).Start();
+                    new Task(() => ProxyClientDataToServer(client, definition, serverStream, clientStream, bufferSize, cancellationToken), cancellationToken).Start();
+                    new Task(() => ProxyServerDataToClient(serverStream, definition, clientStream, bufferSize, cancellationToken), cancellationToken).Start();
                 }
                 catch (Exception ex)
                 {
