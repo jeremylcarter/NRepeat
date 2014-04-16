@@ -20,4 +20,4 @@ Technical Details
 
 NRepeat is released under the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-If you use NRepeat in commercial software you MUST also open source your software.
+If you use NRepeat in commercial software you sell, you MUST also open source your software.
