@@ -7,9 +7,6 @@ NRepeat can work as an Ultra VNC repeater.
 
 The server will be improved with a GUI, backend and REST API.
 
-NRepeat was written by Jeremy Child (jeremychild@gmail.com).
-More information available http://www.jeremychild.com/post/2014/04/16/Introducing-NRepeat-A-C-Ultra-VNC-Repeater
-
 What Next?
 -----------------
 We need to improve the stability. Perhaps move out of the two tasks running per proxy connection and into the IAsyncResult options available in the TcpListener. Have a database of connected clients or thread safe list that allows the modification and deletion of clients. Logging of clients, data used and the time spent. REST API so that you can control the server via Javascript/NodeJS or Web front end.
